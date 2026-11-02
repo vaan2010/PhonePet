@@ -1,13 +1,9 @@
 :root {
-  --bg-top: #101018;
-  --bg-bottom: #050508;
-  --accent: #7eb6ff;
+  --bg: #050508;
+  --accent: #9fd0ff;
   --text: #e8eef8;
   --muted: #9aa8c0;
-  --pupil-size: 42%;
-  --lid-base: 0.08;
   --eye-scale: 1;
-  --lid: #050508;
 }
 
 * {
@@ -20,7 +16,7 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: radial-gradient(120% 90% at 50% 20%, var(--bg-top), var(--bg-bottom));
+  background: #000;
   color: var(--text);
   font-family: "Segoe UI", "PingFang TC", "Noto Sans TC", sans-serif;
   touch-action: manipulation;
@@ -30,6 +26,8 @@ body {
 
 body {
   min-height: 100dvh;
+  background:
+    radial-gradient(90% 70% at 50% 40%, #12131a 0%, #050508 58%, #000 100%);
 }
 
 body.is-portrait .stage {
@@ -48,7 +46,7 @@ body.is-landscape .rotate-gate {
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: radial-gradient(120% 90% at 50% 20%, var(--bg-top), var(--bg-bottom));
+  background: #050508;
 }
 
 .rotate-card {
@@ -60,7 +58,6 @@ body.is-landscape .rotate-gate {
   margin: 0.85rem 0 0;
   font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
 }
 
 .rotate-card .hint {
@@ -122,329 +119,208 @@ body.is-landscape .rotate-gate {
 .stage {
   position: fixed;
   inset: 0;
-  padding: max(0.4rem, env(safe-area-inset-top))
-    max(0.4rem, env(safe-area-inset-right))
-    max(0.4rem, env(safe-area-inset-bottom))
-    max(0.4rem, env(safe-area-inset-left));
 }
 
-/* 左右各半邊，眼睛在各自半邊正中央 */
-.eyes {
+.face {
   position: absolute;
   inset: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  width: 100%;
-  height: 100%;
   transform: scale(var(--eye-scale));
-  transition: transform 220ms ease;
+  transition: transform 180ms ease;
   cursor: pointer;
-  z-index: 1;
 }
 
 .eye-pane {
   display: grid;
   place-items: center;
   min-width: 0;
-  min-height: 0;
   height: 100%;
 }
 
-.eye {
-  position: relative;
-  width: min(52vh, 38vw, 260px);
-  aspect-ratio: 1;
-  overflow: hidden;
+.bot-eye {
+  width: min(52vh, 40vw, 280px);
+  height: auto;
+  overflow: visible;
 }
 
-.sclera {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+.bot-eye .white {
+  fill: #f3f8ff;
 }
 
-.pupil {
-  position: relative;
-  width: var(--pupil-size);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  will-change: transform;
-  transition: width 180ms ease;
+.bot-eye .pupil {
+  fill: #07090f;
 }
 
-.iris-ring {
-  display: none;
+.bot-eye .shine {
+  fill: rgba(255, 255, 255, 0.9);
 }
 
-.shine {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-}
-
-.shine-sm {
-  display: none;
-}
-
-.lid {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 52%;
-  background: var(--lid);
-  z-index: 2;
+.bot-eye .shape {
+  opacity: 0;
+  transition: opacity 120ms ease;
   pointer-events: none;
 }
 
-.lid-top {
-  top: 0;
-  transform-origin: top center;
-  transform: scaleY(var(--lid-base));
+.bot-eye .pupil-layer {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 60ms linear;
 }
 
-.lid-bottom {
-  bottom: 0;
-  transform-origin: bottom center;
-  transform: scaleY(var(--lid-base));
+/* 預設形狀：橢圓光眼 */
+.face[data-emotion="idle"] .shape-oval,
+.face[data-emotion="curious"] .shape-wide,
+.face[data-emotion="happy"] .shape-happy,
+.face[data-emotion="love"] .shape-heart,
+.face[data-emotion="sad"] .shape-sad,
+.face[data-emotion="angry"] .shape-angry,
+.face[data-emotion="sleepy"] .shape-line,
+.face[data-emotion="bored"] .shape-line,
+.face[data-emotion="startled"] .shape-wide,
+.face[data-emotion="shy"] .shape-soft,
+.face[data-emotion="recoil"] .shape-soft,
+.face[data-emotion="dizzy"] .shape-x,
+.face[data-emotion="thinking"] .shape-oval {
+  opacity: 1;
 }
 
-/* ========== Style A: LOOI 光眼 ========== */
-body[data-style="looi"] {
-  --bg-top: #0a0a0c;
-  --bg-bottom: #000;
-  --lid: #000;
-  --pupil-size: 46%;
+/* 疑惑：左右不同形 */
+.face[data-emotion="confused"] .bot-eye[data-side="left"] .shape-soft,
+.face[data-emotion="confused"] .bot-eye[data-side="right"] .shape-oval {
+  opacity: 1;
 }
 
-body[data-style="looi"] .eye {
-  border-radius: 48% / 56%;
-  background: #0c0c10;
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.04),
-    0 0 28px rgba(180, 220, 255, 0.08);
+/* 眨眼／哈欠：細線 */
+.face[data-blink="1"] .bot-eye .shape {
+  opacity: 0 !important;
+}
+.face[data-blink="1"] .bot-eye .shape-line {
+  opacity: 1 !important;
 }
 
-body[data-style="looi"] .sclera {
-  background: radial-gradient(circle at 50% 45%, #f4fbff 0 54%, #cfe8ff 58%, #7eb6ff 100%);
-  border-radius: 48% / 56%;
-  inset: 8%;
-  filter: drop-shadow(0 0 16px rgba(170, 210, 255, 0.55));
+/* wink：左眼彎線、右眼睜開（對觀眾來說左邊） */
+.face[data-emotion="wink"] .bot-eye[data-side="left"] .shape-wink,
+.face[data-emotion="wink"] .bot-eye[data-side="right"] .shape-oval {
+  opacity: 1;
 }
 
-body[data-style="looi"] .pupil {
-  width: var(--pupil-size);
-  aspect-ratio: 0.78;
-  border-radius: 48% / 56%;
-  background: #07090f;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.65);
+.face[data-emotion="startled"] {
+  --eye-scale: 1.08;
 }
-
-body[data-style="looi"] .shine {
-  top: 14%;
-  left: 18%;
-  width: 26%;
-  aspect-ratio: 1;
-  opacity: 0.85;
+.face[data-emotion="recoil"] {
+  --eye-scale: 0.9;
 }
-
-body[data-style="looi"] .lid-top,
-body[data-style="looi"] .lid-bottom {
-  border-radius: 0;
-}
-
-/* ========== Style B: 圓潤瞳孔 ========== */
-body[data-style="orb"] {
-  --bg-top: #1a2744;
-  --bg-bottom: #0b1220;
-  --lid: #0b1220;
-  --pupil-size: 44%;
-}
-
-body[data-style="orb"] .eye {
-  border-radius: 50%;
-  background: #f4f1ea;
-  box-shadow:
-    inset 0 -14px 28px rgba(0, 0, 0, 0.14),
-    0 10px 28px rgba(0, 0, 0, 0.35);
-}
-
-body[data-style="orb"] .pupil {
-  background:
-    radial-gradient(circle at 50% 42%, #6aa8e8 0 24%, transparent 25%),
-    radial-gradient(circle at 50% 50%, #3d73b8 0 46%, #151c2b 47%);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-}
-
-body[data-style="orb"] .iris-ring {
-  display: block;
-  position: absolute;
-  inset: 18%;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-}
-
-body[data-style="orb"] .shine {
-  top: 15%;
-  left: 18%;
-  width: 28%;
-  aspect-ratio: 1;
-}
-
-body[data-style="orb"] .shine-sm {
-  display: block;
-  top: 34%;
-  left: 42%;
-  width: 10%;
-  aspect-ratio: 1;
-  opacity: 0.7;
-}
-
-body[data-style="orb"] .lid-top {
-  border-radius: 0 0 50% 50% / 0 0 18% 18%;
-}
-
-body[data-style="orb"] .lid-bottom {
-  border-radius: 50% 50% 0 0 / 18% 18% 0 0;
-}
-
-/* ========== Style C: 極簡黑點 ========== */
-body[data-style="mono"] {
-  --bg-top: #ece7de;
-  --bg-bottom: #d9d2c5;
-  --lid: #d9d2c5;
-  --pupil-size: 58%;
-  --text: #2a2a2a;
-  --muted: #666;
-}
-
-body[data-style="mono"] .eye {
-  border-radius: 50%;
-  background: transparent;
-  width: min(34vh, 26vw, 190px);
-}
-
-body[data-style="mono"] .sclera {
-  background: transparent;
-}
-
-body[data-style="mono"] .pupil {
-  background: #171717;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
-}
-
-body[data-style="mono"] .shine {
-  top: 18%;
-  left: 22%;
-  width: 22%;
-  aspect-ratio: 1;
-  background: rgba(255, 255, 255, 0.35);
-}
-
-body[data-style="mono"] .lid {
-  background: var(--lid);
-}
-
-body[data-style="mono"] .lid-top,
-body[data-style="mono"] .lid-bottom {
-  border-radius: 50%;
-}
-
-/* ========== Style D: LED 矩眼 ========== */
-body[data-style="led"] {
-  --bg-top: #0d1118;
-  --bg-bottom: #07090e;
-  --lid: #07090e;
-  --pupil-size: 42%;
-}
-
-body[data-style="led"] .eye {
-  width: min(36vh, 34vw, 240px);
-  aspect-ratio: 1.35;
-  border-radius: 18px;
-  background: #10161f;
-  box-shadow:
-    inset 0 0 0 2px rgba(120, 200, 255, 0.15),
-    0 0 24px rgba(80, 170, 255, 0.12);
-}
-
-body[data-style="led"] .sclera {
-  inset: 10%;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #1a3148, #0e1a28);
-}
-
-body[data-style="led"] .pupil {
-  width: var(--pupil-size);
-  aspect-ratio: 1;
-  border-radius: 10px;
-  background: #9fd0ff;
-  box-shadow:
-    0 0 18px rgba(130, 200, 255, 0.85),
-    inset 0 0 8px rgba(255, 255, 255, 0.5);
-}
-
-body[data-style="led"] .shine {
-  display: none;
-}
-
-body[data-style="led"] .lid-top,
-body[data-style="led"] .lid-bottom {
-  border-radius: 0;
-}
-
-/* Emotion pupil size tweaks (shared) */
-.eyes[data-emotion="idle"] {
-  --pupil-size: 42%;
-  --lid-base: 0.1;
-}
-.eyes[data-emotion="happy"] {
-  --pupil-size: 46%;
-  --lid-base: 0.22;
-}
-.eyes[data-emotion="confused"] {
-  --pupil-size: 38%;
-  --lid-base: 0.16;
-}
-.eyes[data-emotion="sleepy"] {
-  --pupil-size: 34%;
-  --lid-base: 0.48;
-}
-.eyes[data-emotion="startled"] {
-  --pupil-size: 58%;
-  --lid-base: 0.02;
+.face[data-emotion="love"] {
   --eye-scale: 1.04;
 }
-.eyes[data-emotion="shy"] {
-  --pupil-size: 36%;
-  --lid-base: 0.62;
+.face[data-emotion="angry"] .bot-eye .white {
+  fill: #ffe4e0;
 }
-.eyes[data-emotion="curious"] {
-  --pupil-size: 52%;
-  --lid-base: 0.06;
-  --eye-scale: 1.02;
+.face[data-emotion="love"] .bot-eye .white {
+  fill: #ffd0e2;
 }
-.eyes[data-emotion="recoil"] {
-  --pupil-size: 28%;
-  --lid-base: 0.18;
-  --eye-scale: 0.94;
+.face[data-emotion="sleepy"] .bot-eye .white,
+.face[data-emotion="bored"] .bot-eye .white {
+  fill: #d7e0ef;
 }
 
-body[data-style="looi"] .eyes[data-emotion="idle"],
-body[data-style="looi"] .eyes[data-emotion="curious"] {
-  --pupil-size: 48%;
-}
-body[data-style="mono"] .eyes[data-emotion="idle"] {
-  --pupil-size: 58%;
-}
-body[data-style="mono"] .eyes[data-emotion="startled"] {
-  --pupil-size: 72%;
-}
-body[data-style="led"] .eyes[data-emotion="startled"] {
-  --pupil-size: 56%;
+/* 輔助表情符號層 */
+.fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
 }
 
-/* Start / style picker */
+.fx-item {
+  position: absolute;
+  font-weight: 800;
+  color: #f4fbff;
+  text-shadow: 0 0 12px rgba(160, 210, 255, 0.7);
+  animation: fx-pop 900ms ease forwards;
+  line-height: 1;
+  user-select: none;
+}
+
+.fx-item.question {
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  color: #b8e0ff;
+}
+.fx-item.exclaim {
+  font-size: clamp(2.2rem, 9vw, 3.8rem);
+  color: #fff3b0;
+}
+.fx-item.zzz {
+  font-size: clamp(1.4rem, 5vw, 2.2rem);
+  letter-spacing: 0.05em;
+  color: #c7d7f0;
+}
+.fx-item.heart {
+  font-size: clamp(1.6rem, 6vw, 2.6rem);
+  color: #ff8fb8;
+  text-shadow: 0 0 14px rgba(255, 120, 170, 0.7);
+}
+.fx-item.anger {
+  font-size: clamp(1.5rem, 5.5vw, 2.4rem);
+  color: #ff8d7a;
+}
+.fx-item.sweat {
+  font-size: clamp(1.5rem, 5.5vw, 2.3rem);
+  color: #9fd0ff;
+}
+.fx-item.spark {
+  font-size: clamp(1.4rem, 5vw, 2.2rem);
+  color: #ffe9a8;
+}
+.fx-item.dots {
+  font-size: clamp(1.8rem, 7vw, 3rem);
+  color: #d7e6ff;
+  letter-spacing: 0.12em;
+}
+
+@keyframes fx-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.7);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.95);
+  }
+}
+
+.fx-item.linger {
+  animation: fx-linger 1400ms ease forwards;
+}
+
+@keyframes fx-linger {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.85);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
 .start-panel {
   position: absolute;
   inset: 0;
@@ -456,8 +332,7 @@ body[data-style="led"] .eyes[data-emotion="startled"] {
     max(0.6rem, env(safe-area-inset-right))
     max(0.6rem, env(safe-area-inset-bottom))
     max(0.6rem, env(safe-area-inset-left));
-  background: rgba(5, 5, 8, 0.55);
-  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .start-panel[hidden] {
@@ -465,161 +340,28 @@ body[data-style="led"] .eyes[data-emotion="startled"] {
 }
 
 .start-sheet {
-  width: min(920px, 100%);
+  width: min(520px, 100%);
   display: grid;
-  gap: 0.55rem;
+  gap: 0.45rem;
   justify-items: center;
-  padding: 0.7rem 0.75rem 0.8rem;
+  padding: 0.85rem 1rem;
   border-radius: 18px;
   background: rgba(12, 16, 28, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
 .start-title {
   margin: 0;
-  font-size: 0.92rem;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-}
-
-.style-picker {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.style-card {
-  -webkit-appearance: none;
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #e8eef8;
-  padding: 0.5rem 0.35rem 0.55rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.22rem;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  min-width: 0;
-}
-
-.style-card[aria-selected="true"] {
-  border-color: #7eb6ff;
-  box-shadow: 0 0 0 1px rgba(126, 182, 255, 0.45);
-  background: rgba(126, 182, 255, 0.14);
-}
-
-.style-name {
-  display: block;
-  font-size: 0.74rem;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1.2;
+  letter-spacing: 0.08em;
+}
+
+.start-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.style-desc {
-  display: block;
-  font-size: 0.64rem;
-  color: #9aa8c0;
-  line-height: 1.2;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.style-preview {
-  width: 100%;
-  height: 46px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex: 0 0 auto;
-}
-
-.style-preview i {
-  display: block;
-}
-
-.preview-looi {
-  background: #000;
-}
-.preview-looi i {
-  width: 14px;
-  height: 22px;
-  border-radius: 40%;
-  background: #eaf5ff;
-  box-shadow: 0 0 10px rgba(170, 210, 255, 0.8);
-  position: relative;
-}
-.preview-looi i::after {
-  content: "";
-  position: absolute;
-  inset: 22% 28%;
-  border-radius: 40%;
-  background: #07090f;
-}
-
-.preview-orb {
-  background: #152238;
-}
-.preview-orb i {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #f4f1ea;
-  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.15);
-  position: relative;
-}
-.preview-orb i::after {
-  content: "";
-  position: absolute;
-  inset: 22%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff 0 18%, #3d73b8 19% 55%, #151c2b 56%);
-}
-
-.preview-mono {
-  background: #ddd6c8;
-}
-.preview-mono i {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #171717;
-}
-
-.preview-led {
-  background: #0b1018;
-}
-.preview-led i {
-  width: 24px;
-  height: 16px;
-  border-radius: 4px;
-  background: #152536;
-  position: relative;
-  box-shadow: inset 0 0 0 1px rgba(120, 200, 255, 0.25);
-}
-.preview-led i::after {
-  content: "";
-  position: absolute;
-  inset: 22% 30%;
-  border-radius: 3px;
-  background: #9fd0ff;
-  box-shadow: 0 0 8px rgba(130, 200, 255, 0.9);
 }
 
 .start-btn {
@@ -627,7 +369,7 @@ body[data-style="led"] .eyes[data-emotion="startled"] {
   appearance: none;
   border: 0;
   border-radius: 999px;
-  margin-top: 0.1rem;
+  margin-top: 0.2rem;
   padding: 0.72rem 1.35rem;
   font-size: 1rem;
   font-weight: 700;
@@ -635,11 +377,10 @@ body[data-style="led"] .eyes[data-emotion="startled"] {
   background: linear-gradient(180deg, #b8d7ff, #7eb6ff);
   cursor: pointer;
   touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .status {
-  margin: 0.2rem 0 0;
+  margin: 0.15rem 0 0;
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.45);
@@ -666,43 +407,4 @@ body[data-style="led"] .eyes[data-emotion="startled"] {
 #motionCanvas {
   width: 160px;
   height: 120px;
-}
-
-@media (max-width: 900px), (max-height: 500px) {
-  .start-panel {
-    align-items: flex-end;
-  }
-
-  .style-picker {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.45rem;
-  }
-
-  .style-preview {
-    height: 38px;
-  }
-
-  .style-desc {
-    display: none;
-  }
-
-  .style-name {
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-height: 380px) {
-  .start-sheet {
-    padding: 0.45rem 0.55rem 0.55rem;
-    gap: 0.4rem;
-  }
-
-  .style-preview {
-    height: 30px;
-  }
-
-  .start-btn {
-    padding: 0.55rem 1.1rem;
-    font-size: 0.92rem;
-  }
 }

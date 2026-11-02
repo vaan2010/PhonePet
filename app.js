@@ -6,38 +6,52 @@ import {
 const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
 const startPanel = document.getElementById("startPanel");
-const stylePicker = document.getElementById("stylePicker");
 const rotateGate = document.getElementById("rotateGate");
-const eyesEl = document.getElementById("eyes");
+const faceEl = document.getElementById("face");
+const fxEl = document.getElementById("fx");
 const video = document.getElementById("video");
 const motionCanvas = document.getElementById("motionCanvas");
 const motionCtx = motionCanvas.getContext("2d", { willReadFrequently: true });
 
-const STYLE_KEY = "desktop-pet-eye-style";
-const STYLES = ["looi", "orb", "mono", "led"];
-
-const leftEyeEl = document.querySelector('.eye[data-side="left"]');
-const rightEyeEl = document.querySelector('.eye[data-side="right"]');
-const leftPupil = leftEyeEl.querySelector(".pupil");
-const rightPupil = rightEyeEl.querySelector(".pupil");
+const leftEye = document.querySelector('.bot-eye[data-side="left"]');
+const rightEye = document.querySelector('.bot-eye[data-side="right"]');
 
 const LEFT_OUTER = 33;
 const RIGHT_OUTER = 263;
 const NOSE = 1;
 
-const MAX_PUPIL_OFFSET = 30;
-const BLINK_OPEN_THRESHOLD = 0.17;
+const MAX_LOOK = 16; // svg units
 const SMOOTH = 0.22;
 
+/** 表情設定：形狀由 CSS data-emotion 控制，這裡管節奏與輔助 icon */
 const EMOTIONS = {
-  idle: { blinkEvery: [2200, 4200], open: 0.92 },
-  happy: { blinkEvery: [1800, 3200], open: 0.82 },
-  confused: { blinkEvery: [2600, 4800], open: 0.88 },
-  sleepy: { blinkEvery: [3500, 6500], open: 0.45 },
-  startled: { blinkEvery: [99999, 99999], open: 1 },
-  shy: { blinkEvery: [99999, 99999], open: 0.22 },
-  curious: { blinkEvery: [1600, 2800], open: 0.96 },
-  recoil: { blinkEvery: [2000, 3600], open: 0.78 },
+  idle: { blinkEvery: [2200, 4200], icons: [] },
+  happy: { blinkEvery: [1800, 3200], icons: ["spark"] },
+  love: { blinkEvery: [2000, 3600], icons: ["heart", "heart"] },
+  sad: { blinkEvery: [2800, 4800], icons: ["sweat"] },
+  angry: { blinkEvery: [2400, 4000], icons: ["anger"] },
+  confused: { blinkEvery: [2600, 4500], icons: ["question"] },
+  thinking: { blinkEvery: [3000, 5000], icons: ["dots"] },
+  sleepy: { blinkEvery: [3500, 6500], icons: ["zzz"] },
+  bored: { blinkEvery: [3200, 5600], icons: ["dots"] },
+  startled: { blinkEvery: [99999, 99999], icons: ["exclaim"] },
+  shy: { blinkEvery: [99999, 99999], icons: ["sweat"] },
+  curious: { blinkEvery: [1600, 2800], icons: ["spark"] },
+  recoil: { blinkEvery: [2000, 3600], icons: ["sweat"] },
+  dizzy: { blinkEvery: [99999, 99999], icons: ["dizzy"] },
+  wink: { blinkEvery: [99999, 99999], icons: ["spark"] },
+};
+
+const ICON_GLYPH = {
+  question: "?",
+  exclaim: "!",
+  zzz: "Zzz",
+  heart: "♥",
+  anger: "╬",
+  sweat: "💧",
+  spark: "✦",
+  dots: "…",
+  dizzy: "@",
 };
 
 let faceLandmarker = null;
@@ -66,6 +80,7 @@ let nextAutoAt = 0;
 let yawnUntil = 0;
 let interactionUntil = 0;
 let lastUserEmotionAt = 0;
+let lastFxAt = 0;
 
 let prevMotionFrame = null;
 let lastWaveAt = 0;
@@ -107,38 +122,58 @@ function checkLandscape() {
   return window.innerWidth > window.innerHeight;
 }
 
-function applyStyle(style) {
-  const next = STYLES.includes(style) ? style : "looi";
-  document.body.dataset.style = next;
-  localStorage.setItem(STYLE_KEY, next);
-  for (const card of stylePicker.querySelectorAll(".style-card")) {
-    card.setAttribute("aria-selected", String(card.dataset.style === next));
-  }
-}
-
 function updateOrientation() {
   isLandscape = checkLandscape();
   document.body.classList.toggle("is-landscape", isLandscape);
   document.body.classList.toggle("is-portrait", !isLandscape);
   rotateGate.hidden = isLandscape;
 
-  if (!isLandscape) {
-    startPanel.hidden = true;
-  } else if (!running && !starting) {
-    startPanel.hidden = false;
+  if (!isLandscape) startPanel.hidden = true;
+  else if (!running && !starting) startPanel.hidden = false;
+}
+
+function spawnFx(kinds, linger = false) {
+  if (!kinds?.length) return;
+  if (now() - lastFxAt < 350) return;
+  lastFxAt = now();
+
+  const slots = [
+    { left: "58%", top: "18%" },
+    { left: "72%", top: "28%" },
+    { left: "64%", top: "12%" },
+    { left: "78%", top: "40%" },
+    { left: "22%", top: "16%" },
+  ];
+
+  kinds.forEach((kind, index) => {
+    const el = document.createElement("div");
+    const cls = kind === "dizzy" ? "question" : kind;
+    el.className = `fx-item ${cls}${linger ? " linger" : ""}`;
+    el.textContent = ICON_GLYPH[kind] || kind;
+    const slot = slots[index % slots.length];
+    el.style.left = `calc(${slot.left} + ${rand(-3, 3)}%)`;
+    el.style.top = `calc(${slot.top} + ${rand(-2, 2)}%)`;
+    fxEl.appendChild(el);
+    window.setTimeout(() => el.remove(), linger ? 1500 : 950);
+  });
+}
+
+function setEmotion(next, durationMs = 0, withFx = true) {
+  const prev = emotion;
+  emotion = next;
+  faceEl.dataset.emotion = next;
+  emotionUntil = durationMs > 0 ? now() + durationMs : 0;
+  scheduleBlink();
+
+  if (withFx && next !== prev) {
+    const icons = EMOTIONS[next]?.icons || [];
+    if (icons.length) spawnFx(icons, next === "confused" || next === "thinking");
   }
 }
 
-function setEmotion(next, durationMs = 0) {
-  emotion = next;
-  eyesEl.dataset.emotion = next;
-  emotionUntil = durationMs > 0 ? now() + durationMs : 0;
-  scheduleBlink();
-}
-
-function lockEmotion(next, durationMs) {
+function lockEmotion(next, durationMs, withFx = true) {
   lockedEmotion = next;
-  setEmotion(next, durationMs);
+  setEmotion(next, durationMs, withFx);
   interactionUntil = now() + durationMs;
 }
 
@@ -154,66 +189,59 @@ function blendMap(categories) {
   return map;
 }
 
-/**
- * 只觀察使用者臉的位置，讓機器人「看向你」。
- * 不同步使用者眼球／眨眼。
- */
 function observeFace(landmarks) {
   const nose = landmarks[NOSE];
-  // 相機未鏡像：畫面左 = 使用者右；機器人看向你時水平取反
   const faceX = clamp((0.5 - nose.x) * 2.0, -1.1, 1.1);
   const faceY = clamp((nose.y - 0.45) * 2.2, -0.9, 0.9);
   const faceSize = dist(landmarks[LEFT_OUTER], landmarks[RIGHT_OUTER]);
   return { faceX, faceY, faceSize };
 }
 
-/**
- * 從使用者表情推估狀態，驅動機器人相對反應（不是模仿眼睛）。
- */
 function reactToUserExpression(blendshapes) {
   if (now() < interactionUntil) return;
   if (now() - lastUserEmotionAt < 900) return;
 
   const b = blendMap(blendshapes);
   const smile = ((b.mouthSmileLeft || 0) + (b.mouthSmileRight || 0)) / 2;
+  const frown = ((b.mouthFrownLeft || 0) + (b.mouthFrownRight || 0)) / 2;
   const jaw = b.jawOpen || 0;
   const browUp = b.browInnerUp || 0;
+  const browDown = ((b.browDownLeft || 0) + (b.browDownRight || 0)) / 2;
   const surprise = ((b.eyeWideLeft || 0) + (b.eyeWideRight || 0)) / 2;
-  const blink =
-    ((b.eyeBlinkLeft || 0) + (b.eyeBlinkRight || 0)) / 2 > 0.55;
+  const blink = ((b.eyeBlinkLeft || 0) + (b.eyeBlinkRight || 0)) / 2 > 0.55;
 
-  // 使用者眨眼：機器人可好奇地回眨一下（反應，不是同步開合）
   if (blink && !prevUserBlink && facePresent) {
     blinkUntil = now() + 140;
-    if (Math.random() > 0.55) {
+    if (Math.random() > 0.6) {
       setEmotion("curious", 700);
       lastUserEmotionAt = now();
     }
   }
   prevUserBlink = blink;
 
-  if (smile > 0.45) {
-    lockEmotion("happy", 1400);
-    autoLook = { x: targetLook.x * 0.3, y: -0.05, until: now() + 800 };
+  if (smile > 0.55) {
+    lockEmotion(Math.random() > 0.65 ? "love" : "happy", 1500);
     lastUserEmotionAt = now();
     return;
   }
-
+  if (smile > 0.4) {
+    lockEmotion("happy", 1200);
+    lastUserEmotionAt = now();
+    return;
+  }
+  if (frown > 0.35 || browDown > 0.45) {
+    lockEmotion(browDown > 0.55 ? "angry" : "sad", 1300);
+    lastUserEmotionAt = now();
+    return;
+  }
   if (jaw > 0.45) {
-    // 使用者張嘴／打哈欠 → 機器人困了跟著哈欠
     startYawn();
     lastUserEmotionAt = now();
     return;
   }
-
   if (surprise > 0.4 || browUp > 0.55) {
-    lockEmotion(surprise > 0.45 ? "startled" : "confused", 1100);
-    autoLook = {
-      x: rand(-0.25, 0.25),
-      y: -0.12,
-      until: now() + 700,
-    };
-    pupilScale = surprise > 0.45 ? 1.18 : 1;
+    if (surprise > 0.45) lockEmotion("startled", 1100);
+    else lockEmotion("confused", 1400);
     lastUserEmotionAt = now();
   }
 }
@@ -231,12 +259,12 @@ function updateDistanceEmotion(faceSizeValue) {
 
   if (ratio > 1.45) {
     setEmotion("recoil", 900);
-    pupilScale = lerp(pupilScale, 0.72, 0.2);
+    pupilScale = lerp(pupilScale, 0.78, 0.2);
   } else if (ratio > 1.18) {
     setEmotion("curious", 800);
-    pupilScale = lerp(pupilScale, 1.15, 0.2);
+    pupilScale = lerp(pupilScale, 1.12, 0.2);
   } else if (ratio < 0.72) {
-    if (emotion === "curious" || emotion === "recoil") setEmotion("idle");
+    if (emotion === "curious" || emotion === "recoil") setEmotion("bored", 1200);
     pupilScale = lerp(pupilScale, 0.95, 0.1);
   } else {
     pupilScale = lerp(pupilScale, 1, 0.08);
@@ -269,7 +297,6 @@ function detectWave() {
       if (diff > 70) motion += 1;
     }
   }
-
   prevMotionFrame.set(frame);
 
   const threshold = facePresent ? 95 : 125;
@@ -284,47 +311,52 @@ function pickAutonomousAction() {
   if (now() < interactionUntil || now() < yawnUntil) return;
   if (now() < nextAutoAt) return;
 
-  // 有人在面前時少一點亂晃，多一點觀察；沒人時更常自己動
-  nextAutoAt = now() + (facePresent ? rand(4200, 8200) : rand(2500, 5500));
+  nextAutoAt = now() + (facePresent ? rand(3800, 7600) : rand(2400, 5200));
   const roll = Math.random();
 
   if (facePresent) {
-    if (roll < 0.35) {
-      // 小小張望一下再看回使用者
+    if (roll < 0.22) {
       autoLook = {
-        x: rand(-0.7, 0.7),
-        y: rand(-0.2, 0.15),
+        x: rand(-0.8, 0.8),
+        y: rand(-0.25, 0.2),
         until: now() + rand(500, 900),
       };
-    } else if (roll < 0.5) {
+    } else if (roll < 0.36) {
       lockEmotion("curious", 900);
-    } else if (roll < 0.62) {
-      setEmotion("confused", 1200);
-    } else if (roll < 0.72) {
+    } else if (roll < 0.48) {
+      lockEmotion("confused", 1600);
+    } else if (roll < 0.58) {
+      lockEmotion("thinking", 1600);
+      autoLook = { x: 0.35, y: -0.45, until: now() + 1200 };
+    } else if (roll < 0.68) {
       startYawn();
+    } else if (roll < 0.78) {
+      lockEmotion("wink", 900);
+    } else if (roll < 0.88) {
+      lockEmotion("happy", 1100);
     } else {
-      setEmotion("happy", 1000);
+      lockEmotion("love", 1200);
     }
     return;
   }
 
-  if (roll < 0.3) {
+  if (roll < 0.28) {
     autoLook = {
       x: rand(-0.95, 0.95),
       y: rand(-0.25, 0.25),
       until: now() + rand(700, 1400),
     };
     setEmotion("idle");
-  } else if (roll < 0.45) {
-    autoLook = { x: 0, y: 0, until: now() + 800 };
-    lockEmotion("curious", 800);
-  } else if (roll < 0.6) {
+  } else if (roll < 0.42) {
+    lockEmotion("bored", 1800);
+  } else if (roll < 0.58) {
     startYawn();
-  } else if (roll < 0.78) {
+  } else if (roll < 0.72) {
     setEmotion("sleepy", 2400);
-    autoLook = { x: rand(-0.2, 0.2), y: 0.4, until: now() + 1800 };
+  } else if (roll < 0.85) {
+    lockEmotion("confused", 1500);
   } else {
-    setEmotion("confused", 1500);
+    lockEmotion("dizzy", 1200);
   }
 }
 
@@ -332,13 +364,14 @@ function startYawn() {
   yawnUntil = now() + 1600;
   lockEmotion("sleepy", 1600);
   blinkUntil = yawnUntil;
+  spawnFx(["zzz"], true);
 }
 
 function maybeBlink() {
   if (now() < blinkUntil) return;
-  if (emotion === "startled" || emotion === "shy") return;
+  if (["startled", "shy", "wink", "dizzy", "love"].includes(emotion)) return;
   if (now() >= nextBlinkAt) {
-    blinkUntil = now() + (emotion === "sleepy" ? 220 : 130);
+    blinkUntil = now() + (emotion === "sleepy" ? 220 : 120);
     scheduleBlink();
   }
 }
@@ -346,19 +379,19 @@ function maybeBlink() {
 function resolveEmotion() {
   if (lockedEmotion && now() < interactionUntil) {
     emotion = lockedEmotion;
-    eyesEl.dataset.emotion = emotion;
+    faceEl.dataset.emotion = emotion;
     return;
   }
   lockedEmotion = null;
 
   if (emotionUntil && now() >= emotionUntil) {
     emotionUntil = 0;
-    setEmotion(facePresent ? "idle" : "sleepy");
+    setEmotion(facePresent ? "idle" : "sleepy", 0, false);
   }
 
   if (!facePresent && now() - lastFaceSeenAt > 5000 && now() >= interactionUntil) {
-    if (emotion !== "sleepy" && emotion !== "confused") {
-      setEmotion(Math.random() > 0.5 ? "sleepy" : "idle");
+    if (emotion !== "sleepy" && emotion !== "bored") {
+      setEmotion(Math.random() > 0.5 ? "sleepy" : "bored", 0, false);
     }
   }
 }
@@ -367,76 +400,44 @@ function renderEyes() {
   smoothLook.x = lerp(smoothLook.x, look.x, SMOOTH);
   smoothLook.y = lerp(smoothLook.y, look.y, SMOOTH);
 
-  const conf = EMOTIONS[emotion] || EMOTIONS.idle;
-  const blinking = now() < blinkUntil;
-  const yawning = now() < yawnUntil;
+  const blinking = now() < blinkUntil || now() < yawnUntil;
+  faceEl.dataset.blink = blinking ? "1" : "0";
 
-  let open = conf.open;
-  if (blinking || yawning) open = 0.02;
-  if (emotion === "startled") open = 1;
-  if (emotion === "shy") {
-    open = Math.min(open, 0.2);
-    smoothLook.y = Math.max(smoothLook.y, 0.45);
+  let lx = smoothLook.x;
+  let ly = smoothLook.y;
+  if (emotion === "shy") ly = Math.max(ly, 0.45);
+  if (emotion === "thinking") {
+    lx = Math.max(lx, 0.25);
+    ly = Math.min(ly, -0.35);
   }
+  if (emotion === "sad") ly = Math.max(ly, 0.25);
 
-  const px = smoothLook.x * MAX_PUPIL_OFFSET;
-  const py = smoothLook.y * MAX_PUPIL_OFFSET;
+  const tx = lx * MAX_LOOK;
+  const ty = ly * MAX_LOOK;
+  const scale = pupilScale;
 
-  leftPupil.style.transform = `translate(${px}%, ${py}%) scale(${pupilScale})`;
-  rightPupil.style.transform = `translate(${px}%, ${py}%) scale(${pupilScale})`;
-
-  setLid(leftEyeEl, open, emotion);
-  setLid(rightEyeEl, open, emotion);
-}
-
-function setLid(eyeEl, openAmount, currentEmotion) {
-  const top = eyeEl.querySelector(".lid-top");
-  const bottom = eyeEl.querySelector(".lid-bottom");
-  const side = eyeEl.dataset.side;
-  const closed = openAmount < BLINK_OPEN_THRESHOLD;
-  const closeAmount = closed ? 1 : clamp(1 - openAmount / 0.3, 0, 1);
-  const base =
-    Number.parseFloat(getComputedStyle(eyesEl).getPropertyValue("--lid-base")) || 0.1;
-
-  let topScale = clamp(base + closeAmount * (1 - base), 0, 1);
-  let bottomScale = Math.max(base * 0.7, closeAmount * 0.5);
-  let skew = 0;
-
-  if (!closed) {
-    if (currentEmotion === "happy") bottomScale = Math.max(bottomScale, 0.4);
-    if (currentEmotion === "sleepy") {
-      topScale = Math.max(topScale, 0.5);
-      bottomScale = Math.max(bottomScale, 0.28);
-    }
-    if (currentEmotion === "shy") {
-      topScale = Math.max(topScale, 0.62);
-      bottomScale = Math.max(bottomScale, 0.35);
-    }
-    if (currentEmotion === "confused") {
-      if (side === "left") {
-        topScale = Math.max(topScale, 0.34);
-        skew = -8;
-      } else {
-        topScale = Math.max(topScale, 0.12);
-        skew = 6;
-      }
-    }
-    if (currentEmotion === "startled") {
-      topScale = Math.min(topScale, 0.04);
-      bottomScale = Math.min(bottomScale, 0.04);
+  for (const eye of [leftEye, rightEye]) {
+    for (const layer of eye.querySelectorAll(".pupil-layer")) {
+      layer.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
     }
   }
-
-  top.style.transform = `scaleY(${topScale}) skewX(${skew}deg)`;
-  bottom.style.transform = `scaleY(${bottomScale})`;
 }
 
-function onEyesTap(event) {
+function onFaceTap(event) {
   if (!running || !isLandscape) return;
   event.preventDefault();
-  lockEmotion("shy", 1400);
-  autoLook = { x: rand(-0.15, 0.15), y: 0.55, until: now() + 1200 };
-  blinkUntil = now() + 900;
+  const roll = Math.random();
+  if (roll < 0.45) {
+    lockEmotion("shy", 1400);
+    autoLook = { x: rand(-0.15, 0.15), y: 0.55, until: now() + 1200 };
+    blinkUntil = now() + 900;
+  } else if (roll < 0.7) {
+    lockEmotion("wink", 900);
+  } else if (roll < 0.85) {
+    lockEmotion("love", 1200);
+  } else {
+    lockEmotion("dizzy", 1000);
+  }
 }
 
 async function createLandmarker() {
@@ -444,7 +445,6 @@ async function createLandmarker() {
   const vision = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
   );
-
   const modelAssetPath =
     "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
   const options = {
@@ -478,7 +478,6 @@ async function startCamera() {
 
   try {
     if (!faceLandmarker) await createLandmarker();
-
     setStatus("請求相機權限…");
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
@@ -494,7 +493,7 @@ async function startCamera() {
     running = true;
     startPanel.hidden = true;
     setStatus("");
-    setEmotion("happy", 1200);
+    lockEmotion("happy", 1200);
     scheduleBlink();
     nextAutoAt = now() + 2500;
     lastFaceSeenAt = now();
@@ -515,7 +514,6 @@ async function startCamera() {
 
 function loop() {
   if (!running || !faceLandmarker) return;
-
   const t = now();
 
   if (isLandscape && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
@@ -525,19 +523,16 @@ function loop() {
     if (result.faceLandmarks?.length) {
       facePresent = true;
       lastFaceSeenAt = t;
-
       const observed = observeFace(result.faceLandmarks[0]);
       targetLook.x = observed.faceX;
       targetLook.y = observed.faceY;
 
-      // 預設看向使用者臉，不跟眼球
       if (t >= autoLook.until && t >= interactionUntil) {
         look.x = targetLook.x;
         look.y = targetLook.y;
       }
 
       updateDistanceEmotion(observed.faceSize);
-
       const shapes = result.faceBlendshapes?.[0]?.categories;
       if (shapes) reactToUserExpression(shapes);
     } else {
@@ -545,14 +540,14 @@ function loop() {
     }
 
     if (detectWave()) {
-      const happy = Math.random() > 0.4;
+      const happy = Math.random() > 0.45;
       lockEmotion(happy ? "happy" : "startled", happy ? 1200 : 1000);
       autoLook = {
         x: facePresent ? targetLook.x : rand(-0.2, 0.2),
         y: happy ? -0.05 : -0.15,
         until: now() + 900,
       };
-      if (!happy) pupilScale = 1.2;
+      if (!happy) pupilScale = 1.15;
     }
   }
 
@@ -568,30 +563,11 @@ function loop() {
   maybeBlink();
   resolveEmotion();
   renderEyes();
-
   requestAnimationFrame(loop);
 }
 
-function onStylePick(event) {
-  const card = event.target.closest(".style-card");
-  if (!card || !stylePicker.contains(card)) return;
-  event.preventDefault();
-  applyStyle(card.dataset.style);
-}
-
-stylePicker.addEventListener("pointerdown", onStylePick);
-stylePicker.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter" && event.key !== " ") return;
-  const card = event.target.closest(".style-card");
-  if (!card) return;
-  event.preventDefault();
-  applyStyle(card.dataset.style);
-});
-
 startBtn.addEventListener("click", startCamera);
-eyesEl.addEventListener("pointerdown", onEyesTap);
-
-applyStyle(localStorage.getItem(STYLE_KEY) || "looi");
+faceEl.addEventListener("pointerdown", onFaceTap);
 
 window.addEventListener("resize", updateOrientation);
 window.addEventListener("orientationchange", updateOrientation);
@@ -605,7 +581,7 @@ if (landscapeQuery.addEventListener) {
 
 updateOrientation();
 scheduleBlink();
-setEmotion("idle");
+setEmotion("idle", 0, false);
 
 if (!navigator.mediaDevices?.getUserMedia) {
   setStatus("此瀏覽器不支援相機");
