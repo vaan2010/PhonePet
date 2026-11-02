@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>卡通眼追蹤</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="stage">
+      <header class="top">
+        <h1>卡通眼</h1>
+        <p id="status">點下方按鈕開啟前鏡頭</p>
+      </header>
+
+      <section class="eyes" aria-label="虛擬雙眼">
+        <div class="eye" data-side="left">
+          <div class="lid lid-top"></div>
+          <div class="sclera">
+            <div class="pupil">
+              <div class="shine"></div>
+            </div>
+          </div>
+          <div class="lid lid-bottom"></div>
+        </div>
+        <div class="eye" data-side="right">
+          <div class="lid lid-top"></div>
+          <div class="sclera">
+            <div class="pupil">
+              <div class="shine"></div>
+            </div>
+          </div>
+          <div class="lid lid-bottom"></div>
+        </div>
+      </section>
+
+      <div class="controls">
+        <button id="startBtn" type="button">開啟前鏡頭</button>
+        <label class="mirror-toggle">
+          <input id="mirrorToggle" type="checkbox" checked />
+          鏡像預覽
+        </label>
+      </div>
+
+      <div class="preview-wrap">
+        <video id="video" playsinline muted autoplay></video>
+        <canvas id="overlay"></canvas>
+      </div>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
