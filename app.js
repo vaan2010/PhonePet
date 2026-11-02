@@ -5,11 +5,16 @@ import {
 
 const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
+const startPanel = document.getElementById("startPanel");
+const stylePicker = document.getElementById("stylePicker");
 const rotateGate = document.getElementById("rotateGate");
 const eyesEl = document.getElementById("eyes");
 const video = document.getElementById("video");
 const motionCanvas = document.getElementById("motionCanvas");
 const motionCtx = motionCanvas.getContext("2d", { willReadFrequently: true });
+
+const STYLE_KEY = "desktop-pet-eye-style";
+const STYLES = ["looi", "orb", "mono", "led"];
 
 const leftEyeEl = document.querySelector('.eye[data-side="left"]');
 const rightEyeEl = document.querySelector('.eye[data-side="right"]');
@@ -102,6 +107,15 @@ function checkLandscape() {
   return window.innerWidth > window.innerHeight;
 }
 
+function applyStyle(style) {
+  const next = STYLES.includes(style) ? style : "looi";
+  document.body.dataset.style = next;
+  localStorage.setItem(STYLE_KEY, next);
+  for (const btn of stylePicker.querySelectorAll(".style-card")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.style === next));
+  }
+}
+
 function updateOrientation() {
   isLandscape = checkLandscape();
   document.body.classList.toggle("is-landscape", isLandscape);
@@ -109,10 +123,9 @@ function updateOrientation() {
   rotateGate.hidden = isLandscape;
 
   if (!isLandscape) {
-    startBtn.hidden = true;
+    startPanel.hidden = true;
   } else if (!running && !starting) {
-    startBtn.hidden = false;
-    startBtn.textContent = "點一下喚醒機器人";
+    startPanel.hidden = false;
   }
 }
 
@@ -460,6 +473,7 @@ async function startCamera() {
 
   starting = true;
   startBtn.disabled = true;
+  const prevLabel = startBtn.textContent;
   startBtn.textContent = "喚醒中…";
 
   try {
@@ -478,7 +492,7 @@ async function startCamera() {
     video.srcObject = stream;
     await video.play();
     running = true;
-    startBtn.hidden = true;
+    startPanel.hidden = true;
     setStatus("");
     setEmotion("happy", 1200);
     scheduleBlink();
@@ -488,8 +502,8 @@ async function startCamera() {
   } catch (err) {
     console.error(err);
     startBtn.disabled = false;
-    startBtn.hidden = false;
-    startBtn.textContent = "點一下喚醒機器人";
+    startBtn.textContent = prevLabel || "喚醒機器人";
+    startPanel.hidden = false;
     if (err?.name === "NotAllowedError") setStatus("相機權限被拒絕");
     else if (location.protocol !== "https:" && location.hostname !== "localhost") {
       setStatus("需要 HTTPS 才能開相機");
@@ -558,8 +572,16 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+stylePicker.addEventListener("click", (event) => {
+  const card = event.target.closest(".style-card");
+  if (!card) return;
+  applyStyle(card.dataset.style);
+});
+
 startBtn.addEventListener("click", startCamera);
 eyesEl.addEventListener("pointerdown", onEyesTap);
+
+applyStyle(localStorage.getItem(STYLE_KEY) || "looi");
 
 window.addEventListener("resize", updateOrientation);
 window.addEventListener("orientationchange", updateOrientation);

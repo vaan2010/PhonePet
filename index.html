@@ -12,7 +12,7 @@
     <title>桌面機器人</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body data-style="looi">
     <div id="rotateGate" class="rotate-gate" hidden>
       <div class="rotate-card">
         <div class="phone-icon" aria-hidden="true">
@@ -26,30 +26,69 @@
 
     <main id="stage" class="stage">
       <section id="eyes" class="eyes" data-emotion="idle" aria-label="機器人雙眼">
-        <div class="eye" data-side="left">
-          <div class="lid lid-top"></div>
-          <div class="sclera">
-            <div class="pupil">
-              <div class="shine"></div>
+        <div class="eye-pane">
+          <div class="eye" data-side="left">
+            <div class="lid lid-top"></div>
+            <div class="sclera">
+              <div class="pupil">
+                <div class="iris-ring"></div>
+                <div class="shine"></div>
+                <div class="shine shine-sm"></div>
+              </div>
             </div>
+            <div class="lid lid-bottom"></div>
           </div>
-          <div class="lid lid-bottom"></div>
         </div>
-        <div class="eye" data-side="right">
-          <div class="lid lid-top"></div>
-          <div class="sclera">
-            <div class="pupil">
-              <div class="shine"></div>
+        <div class="eye-pane">
+          <div class="eye" data-side="right">
+            <div class="lid lid-top"></div>
+            <div class="sclera">
+              <div class="pupil">
+                <div class="iris-ring"></div>
+                <div class="shine"></div>
+                <div class="shine shine-sm"></div>
+              </div>
             </div>
+            <div class="lid lid-bottom"></div>
           </div>
-          <div class="lid lid-bottom"></div>
         </div>
       </section>
 
-      <button id="startBtn" class="start-overlay" type="button">
-        點一下喚醒機器人
-      </button>
-      <p id="status" class="status" hidden></p>
+      <div id="startPanel" class="start-panel">
+        <p class="start-title">選眼睛樣式</p>
+        <div id="stylePicker" class="style-picker" role="listbox" aria-label="眼睛樣式">
+          <button type="button" class="style-card" data-style="looi" aria-pressed="true">
+            <span class="style-preview preview-looi" aria-hidden="true">
+              <i></i><i></i>
+            </span>
+            <span class="style-name">A · LOOI 光眼</span>
+            <span class="style-desc">黑底發光膠囊眼</span>
+          </button>
+          <button type="button" class="style-card" data-style="orb" aria-pressed="false">
+            <span class="style-preview preview-orb" aria-hidden="true">
+              <i></i><i></i>
+            </span>
+            <span class="style-name">B · 圓潤瞳孔</span>
+            <span class="style-desc">柔和立體卡通眼</span>
+          </button>
+          <button type="button" class="style-card" data-style="mono" aria-pressed="false">
+            <span class="style-preview preview-mono" aria-hidden="true">
+              <i></i><i></i>
+            </span>
+            <span class="style-name">C · 極簡黑點</span>
+            <span class="style-desc">乾淨扁平機器人</span>
+          </button>
+          <button type="button" class="style-card" data-style="led" aria-pressed="false">
+            <span class="style-preview preview-led" aria-hidden="true">
+              <i></i><i></i>
+            </span>
+            <span class="style-name">D · LED 矩眼</span>
+            <span class="style-desc">螢幕像素機器人</span>
+          </button>
+        </div>
+        <button id="startBtn" class="start-btn" type="button">喚醒機器人</button>
+        <p id="status" class="status" hidden></p>
+      </div>
     </main>
 
     <div class="capture" aria-hidden="true">
