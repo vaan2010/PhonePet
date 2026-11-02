@@ -8,6 +8,9 @@
   --accent: #7eb6ff;
   --text: #e8eef8;
   --muted: #9aa8c0;
+  --pupil-size: 42%;
+  --lid-base: 0.08;
+  --eye-scale: 1;
 }
 
 * {
@@ -24,6 +27,8 @@ body {
   color: var(--text);
   font-family: "Segoe UI", "PingFang TC", "Noto Sans TC", sans-serif;
   touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
@@ -136,6 +141,9 @@ body.is-landscape .rotate-gate {
   gap: clamp(2rem, 10vw, 6rem);
   width: 100%;
   height: 100%;
+  transform: scale(var(--eye-scale));
+  transition: transform 220ms ease;
+  cursor: pointer;
 }
 
 .eye {
@@ -159,15 +167,15 @@ body.is-landscape .rotate-gate {
 
 .pupil {
   position: relative;
-  width: 42%;
+  width: var(--pupil-size);
   aspect-ratio: 1;
   border-radius: 50%;
   background:
     radial-gradient(circle at 50% 45%, #5a8fd0 0 28%, transparent 29%),
     radial-gradient(circle at 50% 50%, var(--iris) 0 48%, var(--pupil) 49%);
-  transform: translate(0, 0);
-  transition: transform 40ms linear;
+  transform: translate(0, 0) scale(1);
   will-change: transform;
+  transition: width 180ms ease;
 }
 
 .shine {
@@ -178,6 +186,7 @@ body.is-landscape .rotate-gate {
   aspect-ratio: 1;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
+  transition: width 180ms ease, opacity 180ms ease;
 }
 
 .lid {
@@ -187,22 +196,102 @@ body.is-landscape .rotate-gate {
   height: 52%;
   background: var(--lid);
   z-index: 2;
-  transition: transform 60ms ease-out;
   pointer-events: none;
 }
 
 .lid-top {
   top: 0;
   transform-origin: top center;
-  transform: scaleY(0.08);
+  transform: scaleY(var(--lid-base));
   border-radius: 0 0 50% 50% / 0 0 18% 18%;
 }
 
 .lid-bottom {
   bottom: 0;
   transform-origin: bottom center;
-  transform: scaleY(0.08);
+  transform: scaleY(var(--lid-base));
   border-radius: 50% 50% 0 0 / 18% 18% 0 0;
+}
+
+/* Emotion presets */
+.eyes[data-emotion="idle"] {
+  --pupil-size: 42%;
+  --lid-base: 0.1;
+  --iris: #3d6ea8;
+}
+
+.eyes[data-emotion="happy"] {
+  --pupil-size: 46%;
+  --lid-base: 0.22;
+  --iris: #4f8fd0;
+}
+
+.eyes[data-emotion="happy"] .lid-bottom {
+  transform: scaleY(0.42);
+}
+
+.eyes[data-emotion="happy"] .shine {
+  width: 34%;
+}
+
+.eyes[data-emotion="confused"] {
+  --pupil-size: 38%;
+  --lid-base: 0.16;
+  --iris: #6a7fad;
+}
+
+.eyes[data-emotion="confused"] .eye[data-side="left"] .lid-top {
+  transform: scaleY(0.34) skewX(-8deg);
+}
+
+.eyes[data-emotion="confused"] .eye[data-side="right"] .lid-top {
+  transform: scaleY(0.12) skewX(6deg);
+}
+
+.eyes[data-emotion="sleepy"] {
+  --pupil-size: 34%;
+  --lid-base: 0.48;
+  --iris: #5b6f93;
+}
+
+.eyes[data-emotion="sleepy"] .lid-bottom {
+  transform: scaleY(0.28);
+}
+
+.eyes[data-emotion="startled"] {
+  --pupil-size: 58%;
+  --lid-base: 0.02;
+  --iris: #5aa0ff;
+  --eye-scale: 1.06;
+}
+
+.eyes[data-emotion="startled"] .shine {
+  width: 22%;
+  opacity: 0.75;
+}
+
+.eyes[data-emotion="shy"] {
+  --pupil-size: 36%;
+  --lid-base: 0.62;
+  --iris: #7a8eb3;
+}
+
+.eyes[data-emotion="shy"] .lid-bottom {
+  transform: scaleY(0.35);
+}
+
+.eyes[data-emotion="curious"] {
+  --pupil-size: 52%;
+  --lid-base: 0.06;
+  --iris: #4b86c8;
+  --eye-scale: 1.03;
+}
+
+.eyes[data-emotion="recoil"] {
+  --pupil-size: 28%;
+  --lid-base: 0.18;
+  --eye-scale: 0.92;
+  --iris: #6d7f9e;
 }
 
 .start-overlay {
@@ -256,11 +345,7 @@ body.is-landscape .rotate-gate {
 }
 
 #video,
-#overlay {
-  width: 320px;
-  height: 240px;
-}
-
-#video {
-  transform: scaleX(-1);
+#motionCanvas {
+  width: 160px;
+  height: 120px;
 }

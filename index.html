@@ -8,7 +8,8 @@
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>卡通眼追蹤</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>桌面機器人</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -18,13 +19,13 @@
           <span class="phone-body"></span>
           <span class="rotate-arrow">↻</span>
         </div>
-        <p>請將手機轉成橫式</p>
-        <p class="hint">轉過去後才會顯示雙眼畫面</p>
+        <p>請將手機橫放在桌上</p>
+        <p class="hint">橫式後會變成機器人的臉</p>
       </div>
     </div>
 
     <main id="stage" class="stage">
-      <section class="eyes" aria-label="虛擬雙眼">
+      <section id="eyes" class="eyes" data-emotion="idle" aria-label="機器人雙眼">
         <div class="eye" data-side="left">
           <div class="lid lid-top"></div>
           <div class="sclera">
@@ -46,15 +47,14 @@
       </section>
 
       <button id="startBtn" class="start-overlay" type="button">
-        點一下開始
+        點一下喚醒機器人
       </button>
       <p id="status" class="status" hidden></p>
     </main>
 
-    <!-- 追蹤用，不顯示 -->
     <div class="capture" aria-hidden="true">
       <video id="video" playsinline muted autoplay></video>
-      <canvas id="overlay"></canvas>
+      <canvas id="motionCanvas"></canvas>
     </div>
 
     <script type="module" src="./app.js"></script>
