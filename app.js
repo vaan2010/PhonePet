@@ -111,8 +111,8 @@ function applyStyle(style) {
   const next = STYLES.includes(style) ? style : "looi";
   document.body.dataset.style = next;
   localStorage.setItem(STYLE_KEY, next);
-  for (const btn of stylePicker.querySelectorAll(".style-card")) {
-    btn.setAttribute("aria-pressed", String(btn.dataset.style === next));
+  for (const card of stylePicker.querySelectorAll(".style-card")) {
+    card.setAttribute("aria-selected", String(card.dataset.style === next));
   }
 }
 
@@ -572,9 +572,19 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-stylePicker.addEventListener("click", (event) => {
+function onStylePick(event) {
+  const card = event.target.closest(".style-card");
+  if (!card || !stylePicker.contains(card)) return;
+  event.preventDefault();
+  applyStyle(card.dataset.style);
+}
+
+stylePicker.addEventListener("pointerdown", onStylePick);
+stylePicker.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
   const card = event.target.closest(".style-card");
   if (!card) return;
+  event.preventDefault();
   applyStyle(card.dataset.style);
 });
 
