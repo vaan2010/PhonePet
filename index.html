@@ -4,19 +4,26 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>卡通眼追蹤</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="stage">
-      <header class="top">
-        <h1>卡通眼</h1>
-        <p id="status">點下方按鈕開啟前鏡頭</p>
-      </header>
+    <div id="rotateGate" class="rotate-gate" hidden>
+      <div class="rotate-card">
+        <div class="phone-icon" aria-hidden="true">
+          <span class="phone-body"></span>
+          <span class="rotate-arrow">↻</span>
+        </div>
+        <p>請將手機轉成橫式</p>
+        <p class="hint">轉過去後才會顯示雙眼畫面</p>
+      </div>
+    </div>
 
+    <main id="stage" class="stage">
       <section class="eyes" aria-label="虛擬雙眼">
         <div class="eye" data-side="left">
           <div class="lid lid-top"></div>
@@ -38,19 +45,17 @@
         </div>
       </section>
 
-      <div class="controls">
-        <button id="startBtn" type="button">開啟前鏡頭</button>
-        <label class="mirror-toggle">
-          <input id="mirrorToggle" type="checkbox" checked />
-          鏡像預覽
-        </label>
-      </div>
-
-      <div class="preview-wrap">
-        <video id="video" playsinline muted autoplay></video>
-        <canvas id="overlay"></canvas>
-      </div>
+      <button id="startBtn" class="start-overlay" type="button">
+        點一下開始
+      </button>
+      <p id="status" class="status" hidden></p>
     </main>
+
+    <!-- 追蹤用，不顯示 -->
+    <div class="capture" aria-hidden="true">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+    </div>
 
     <script type="module" src="./app.js"></script>
   </body>
